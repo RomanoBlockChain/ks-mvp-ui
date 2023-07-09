@@ -6,5 +6,5 @@
 export const clientEnv = {
   NEXT_PUBLIC_ENVIRONMENT: process.env.NEXT_PUBLIC_ENVIRONMENT || 'DEV',
   NEXT_PUBLIC_APP_TITLE: process.env.NEXT_PUBLIC_APP_TITLE || 'Kickstar',
-  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://api.kickstar.io',
+  NEXT_PUBLIC_APP_URL:  'https://api.kickstar.io', //process.env.NEXT_PUBLIC_APP_URL ||
 }
