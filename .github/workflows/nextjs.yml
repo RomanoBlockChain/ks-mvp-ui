@@ -6,80 +6,26 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Calculate short sha
-        id: sha_short
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Detect env to build image
-        id: env
-        shell: bash
-        run: |
-          if [[ ${GITHUB_REF#refs/heads/} == "main" ]]; then
-            echo "env=prod" >> $GITHUB_OUTPUT
-          else
-            echo "env=staging" >> $GITHUB_OUTPUT
-          fi
-
-        
-      - name: Login to GAR Staging
-        uses: docker/login-action@v2
-        if: github.ref != 'refs/heads/main'
+      - name: Set Up Node.js
+        uses: actions/setup-node@v2
         with:
-          registry: ${{ vars.CONTAINER_REGISTRY }}
-          username: _json_key
-          password: ${{ secrets.GKE_SA_KEY }}
+          node-version: 16
 
-      - name: Login to GAR Production
-        uses: docker/login-action@v2
-        if: github.ref == 'refs/heads/main'
-        with:
-          registry: ${{ vars.CONTAINER_REGISTRY_PROD }}
-          username: _json_key
-          password: ${{ secrets.GKE_SA_KEY_PROD }}
+      - name: Install Dependencies
+        run: yarn install
 
-      - name: Build Docker image Staging
-        uses: docker/build-push-action@v2
-        if: github.ref != 'refs/heads/main'
-        with:
-          context: .
-          push: true
-          tags: "${{ vars.CONTAINER_REGISTRY }}/${{ vars.GCP_PROJECT }}/${{ vars.IMAGE_PATH }}:${{ steps.sha_short.outputs.sha_short }}"
+      - name: Build Application
+        run: yarn build
 
-
-      - name: Build Docker image Production
-        uses: docker/build-push-action@v2
-        if: github.ref == 'refs/heads/main'
-        with:
-          context: .
-          push: true
-          tags: "${{ vars.CONTAINER_REGISTRY }}/${{ vars.GCP_PROJECT_PROD }}/${{ vars.IMAGE_PATH }}:${{ steps.sha_short.outputs.sha_short }}"
-
-      - name: Trigger workflow for staging 
+      - name: Deploy to Server
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          MANIFEST_REPOSITORY: kickstar-io/k8s-manifests
-          APP: ${{ vars.K8S_APP}}
-          CONTAINER_NAME: ${{ vars.K8S_CONTAINER_NAME }}
-          TAG: ${{ steps.sha_short.outputs.sha_short }}
-          IMAGE: "${{ vars.CONTAINER_REGISTRY }}/${{ vars.GCP_PROJECT }}/${{ vars.IMAGE_PATH }}"
-        if: github.ref != 'refs/heads/main'
+          ENV_FILE: .env.production
         run: |
-          gh workflow run main.yml -R "$MANIFEST_REPOSITORY" -f app=$APP -f tag=$TAG -f image=$IMAGE -f container_name=$CONTAINER_NAME -f env=${{ steps.env.outputs.env }}
-
-      - name: Trigger workflow for production 
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          MANIFEST_REPOSITORY: kickstar-io/k8s-manifests
-          APP: ${{ vars.K8S_APP}}
-          CONTAINER_NAME: ${{ vars.K8S_CONTAINER_NAME }}
-          TAG: ${{ steps.sha_short.outputs.sha_short }}
-          IMAGE: "${{ vars.CONTAINER_REGISTRY }}/${{ vars.GCP_PROJECT_PROD }}/${{ vars.IMAGE_PATH }}"
-        if: github.ref == 'refs/heads/main'
-        run: |
-          gh workflow run main.yml -R "$MANIFEST_REPOSITORY" -f app=$APP -f tag=$TAG -f image=$IMAGE -f container_name=$CONTAINER_NAME -f env=${{ steps.env.outputs.env }}
+          # Your deployment commands here
+          # Use the $ENV_FILE environment variable to access the environment file
