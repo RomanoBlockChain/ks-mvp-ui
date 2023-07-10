@@ -2,7 +2,7 @@ import { clientEnv } from '@/env';
 import axios from 'axios';
 
 export const instance = axios.create({
-  baseURL: clientEnv.NEXT_PUBLIC_APP_URL,
+  baseURL: "https://api.kickstar.io/",//clientEnv.NEXT_PUBLIC_APP_URL,
   headers: {
     'Content-Type': 'application/json',
   },
